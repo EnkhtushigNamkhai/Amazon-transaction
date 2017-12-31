@@ -1,18 +1,23 @@
-// Add this to the VERY top of the first file loaded in your app
-var apm = require('elastic-apm-node').start({
-	appName: 'transaction',
-	serverUrl: 'http://localhost:8200'
-});
+/** UNCOMEMMENT IF WANT TO USE APM **/
+// var apm = require('elastic-apm-node').start({
+// 	appName: 'transaction',
+// 	serverUrl: 'http://localhost:8200'
+// });
 var express = require('express');
+var app = express();
+/** Uncomment if want to use the queue **/
+var aws = require('aws-sdk');
 var axios = require('axios');
 var bodyParser = require('body-parser');
 var pg = require('../database-Postgres/index.js');
 var inputs = require('./requestFormat.js');
 
-var app = express();
+
 app.use(bodyParser.json());
+
 // any errors caught by Express can be logged by the agent as well
-app.use(apm.middleware.express())
+/** UNCOMEMMENT IF WANT TO USE APM **/
+// app.use(apm.middleware.express())
 
 app.listen(8000, function () { 
   console.log('listening on port 8000!') 
@@ -160,13 +165,115 @@ app.post('/subscribe', function(req, res) {
   });
 });
 
+/** Things to ask Anthony: 
+1. Should I try changing my database to Cassandra? Does Cassandra provide durability? 
+2. How does the server handle so many different requests coming to it?
+3. Clarify the question. Does 10,000 RPS mean that we want our services to be able to withstand the amount of requests, 
+with reasonable amount of latency? What is too slow for a response? 
+**/
 
 
+/** EXAMPLE SQS CODE **/
+/*
+1. Make a queue
+2. Make writing to queue work
+3. Test reading from a queue
+4. Think about how multiple servers on different machines will read from one queue.
+5. Explore batch reading from a queue and batch writes to a queue.
+
+*/
 
 
+// // Load your AWS credentials and try to instantiate the object.
+// aws.config.loadFromPath(__dirname + '/../config.json');
+
+// // Instantiate SQS.
+// var sqs = new aws.SQS();
+
+// // Creating a queue.
+// //created a queue 
+// //{"ResponseMetadata":{"RequestId":"a11c2808-bf4c-5316-bee2-7acad9f15d5f"},"QueueUrl":"https://sqs.us-west-1.amazonaws.com/141095122109/TransactionOutputQueue"}
+// app.get('/create', function (req, res) {
+//     var params = {
+//         QueueName: "TransactionOutputQueue"
+//     };
+
+//     sqs.createQueue(params, function(err, data) {
+//         if(err) {
+//             res.send(err);
+//         }
+//         else {
+//             res.send(data);
+//         }
+//     });
+// });
+
+// var queueUrl = "https://sqs.us-west-1.amazonaws.com/141095122109/TransactionOutputQueue";
+
+// // Sending a message.
+// // NOTE: Here we need to populate the queue url you want to send to.
+// // That variable is indicated at the top of app.js.
+// app.get('/send', function (req, res) {
+//     var params = {
+//         MessageBody: 'Hello world!',
+//         QueueUrl: queueUrl,
+//         DelaySeconds: 0
+//     };
+
+//     sqs.sendMessage(params, function(err, data) {
+//         if(err) {
+//             res.send(err);
+//         } 
+//         else {
+//             res.send(data);
+//         } 
+//     });
+// });
 
 
-// if you have more time, you can try to implement the activity log.
+// // Receive a message.
+// // NOTE: This is a great long polling example. You would want to perform
+// // this action on some sort of job server so that you can process these
+// // records. In this example I'm just showing you how to make the call.
+// // It will then put the message "in flight" and I won't be able to 
+// // reach that message again until that visibility timeout is done.
+// app.get('/receive', function (req, res) {
+//     var params = {
+//         QueueUrl: queueUrl,
+//         VisibilityTimeout: 600 // 10 min wait time for anyone else to process.
+//     };
+    
+//     sqs.receiveMessage(params, function(err, data) {
+//         if(err) {
+//             res.send(err);
+//         } 
+//         else {
+//             res.send(data);
+//         } 
+//     });
+// });
+
+// //receipt gets returned after a call to /receive
+// var receipt = "AQEBiuDrWp0fNehIykDyELZ1AiWdr9vYveX8VoMCfYnxe7QwRzD9RmF3+hykW6LLXcjpKcD2geGJFPNqhDjBIF5Da4SodTxZQQwctxSzEHOABGud4J8sB8lbThI322pE6uHTuHSU2yLncUgE0DZJ+Gwl5BcdK0JnaTEkaot6UcsE9PJWOkkJFd4x2hL5Rm4UToq5TYtH3RbGKK07YsbIZMTbOX1zsw3enCj8IoQc1/4gkllsdfUu4/Zhf1UVGG5nnaPPR4BhC0QwjYd5zt7xG0/lUa4v3PL9of8YNnFcNFYtPZSvX/71byjN7O0HF5ncZjUgyrkUrRt4e/FOKNhxrCl/XK39jG63qTm+oWcERRGQERPTXaspgXA58iJ0Xo6NTDPZ3EQ+8/OxwPrQbIWyYK76ew==";
+
+// // Deleting a message.
+// app.get('/delete', function (req, res) {
+//     var params = {
+//         QueueUrl: queueUrl,
+//         ReceiptHandle: receipt
+//     };
+    
+//     sqs.deleteMessage(params, function(err, data) {
+//         if(err) {
+//             res.send(err);
+//         } 
+//         else {
+//         	//{"ResponseMetadata":{"RequestId":"9b520915-33d6-5e62-abcd-5bd754214f90"}}
+//             res.send(data);
+//         } 
+//     });
+// });
+
 
 
 /* FOR LATER WITH STRIPE */

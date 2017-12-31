@@ -4,7 +4,7 @@ config:
     pool: 10 # All HTTP requests from all virtual users will be sent over the same 10 connections
   phases:
     - duration: 10
-      arrivalRate: 1
+      arrivalRate: 10
       name: "Create 5 virtual users every second for 2 minute"
   processor: "./loadTest.js"
 scenarios:
