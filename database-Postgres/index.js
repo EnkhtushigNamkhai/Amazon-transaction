@@ -76,35 +76,34 @@ module.exports.storeTransaction = function(obj, callback) {
         priceperitem: product.price
       };
       
-      //add productObj to database
-      new purchasedproducts(productObj).save(null, {method: 'insert'}).then(function(result) {
-        itemsProcessed++;
-        if (itemsProcessed === obj.products.length) {
-          callback(newRow.id, null);
-        }
-      }).catch(function(err) {
-        // callback(null, err);
-        console.log('error in saving');
-      });
+      // //add productObj to database
+      // new purchasedproducts(productObj).save(null, {method: 'insert'}).then(function(result) {
+      //   itemsProcessed++;
+      //   if (itemsProcessed === obj.products.length) {
+      //     callback(newRow.id, null);
+      //   }
+      // }).catch(function(err) {
+      //   // callback(null, err);
+      //   console.log('error in saving');
+      // });
 
 
-      // productsToInsert.push(productObj);
+      productsToInsert.push(productObj);
     }
 
 
-    // // batch insert it into PurchasedProducts table. 
-    // knex.batchInsert('purchasedproducts', productsToInsert)
-    // .then(function(ids) {
-    //     console.log('batch load successful');
-    //     callback(newRow.id, null);
-    // }).catch(function(err) {
-    //   callback(null, err);
-    // });
+    // batch insert it into PurchasedProducts table. 
+    knex.batchInsert('purchasedproducts', productsToInsert)
+    .then(function(ids) {
+      // console.log('batch load successful');
+      callback(newRow.id, null);
+    }).catch(function(err) {
+      callback(null, err);
+    });
 
   }).catch(function(err) {
     // Handle errors
     console.log('error in saving to DATABASE');
-    console.log(err);
     callback(null, err);
   });
 }
