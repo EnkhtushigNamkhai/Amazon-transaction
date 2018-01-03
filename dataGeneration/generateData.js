@@ -124,7 +124,6 @@ function generatePurchasedProds() {
     }
     writeStream.end();
     console.log('done');
-
   });
 }
 

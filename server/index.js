@@ -3,6 +3,37 @@
 // 	appName: 'transaction',
 // 	serverUrl: 'http://localhost:8200'
 // });
+
+// var cluster = require('cluster');
+
+// if (cluster.isMaster) {
+//     var numWorkers = require('os').cpus().length;
+
+//     console.log('Master cluster setting up ' + numWorkers + ' workers...');
+
+//     for(var i = 0; i < numWorkers; i++) {
+//         cluster.fork();
+//     }
+
+//     cluster.on('online', function(worker) {
+//         console.log('Worker ' + worker.process.pid + ' is online');
+//     });
+
+//     cluster.on('exit', function(worker, code, signal) {
+//         console.log('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal: ' + signal);
+//         console.log('Starting a new worker');
+//         cluster.fork();
+//     });
+// } else {
+//     var app = require('express')();
+//     app.all('/*', function(req, res) {res.send('process ' + process.pid + ' says hello!').end();})
+
+//     var server = app.listen(8000, function() {
+//         console.log('Process ' + process.pid + ' is listening to all incoming requests');
+//     });
+// }
+
+
 var express = require('express');
 var app = express();
 /** Uncomment if want to use the queue **/
@@ -16,8 +47,10 @@ var inputs = require('./requestFormat.js');
 app.use(bodyParser.json());
 
 // any errors caught by Express can be logged by the agent as well
-/** UNCOMEMMENT IF WANT TO USE APM **/
+/** UNCOMMENT IF WANT TO USE APM **/
 // app.use(apm.middleware.express())
+
+
 
 app.listen(8000, function () { 
   console.log('listening on port 8000!') 
@@ -45,7 +78,7 @@ function getVendors(products) {
 //*********************REQ FROM CLIENT************************************
 app.post('/processTrans', function(req, res) {
 	// var obj = inputs.processTransTestInput; //change to req.body later
-	console.log('calling processTrans hereee');
+	// console.log('calling processTrans hereee');
 	var obj = req.body;
 
 	/* Uncomment this if not load testing. */
@@ -75,7 +108,6 @@ app.post('/processTrans', function(req, res) {
 		if (err) {
 			res.send('error...');
 		}
-		console.log('Stored Trans and the products to their tables');
 	  var vendors = getVendors(products);
 	  var paymentData = {
 	  	userId: userId, 
@@ -83,38 +115,45 @@ app.post('/processTrans', function(req, res) {
 	  	cartTotal: cartTotal,
 	  	vendors: vendors
 	  };
+
+	  // res.send('pending');
+
 	  /******************* Telling ghost service to complete the transaction **********************/
 	  axios.post('http://localhost:5000/ghost/completeTransaction', paymentData)
 	  .then(function (response) {
-	  	/********************* Things to do when trans successful *******************************/
-	  	res.send("Successful Transaction\n");
-	  	if (primeTrialSignUp) {
-		  	var date = new Date();  //Wed Dec 20 2017 15:08:02 GMT-0800 (PST) in ISO Format
-		    axios.put('/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: cartTotal});
-		  }
-	  	
-		  //on success from ghost service, update the status of the transaction in DB to completed
-	  	pg.update(userTransId, 'completed', function(status) {
-	  		if (status === 'Failed') {
-		 		};
-	  	});
+
+	  	if (response.data === 'successful') {
+		  	/********************* Things to do when trans successful *******************************/
+		  	res.send("Successful Transaction\n");
+		  	if (primeTrialSignUp) {
+			  	var date = new Date();  //Wed Dec 20 2017 15:08:02 GMT-0800 (PST) in ISO Format
+			    axios.put('/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: cartTotal});
+			  }
+		  	
+			  //on success from ghost service, update the status of the transaction in DB to completed
+		  	pg.update(userTransId, 'completed', function(status) {});	  		
+	  	} else {
+	  		handleFail(res, products, userTransId);
+	  	}
 	  })
 	  .catch(function (error) {
-	  	// ******************** Things to do when trans Fails ******************************
-			res.send("Error in Transaction\n");
-			axios.put('http://localhost:5000/inventory/undo', products)
-			.catch(function(error) {
-				console.log('inventory could not undo request');
-			});
-			//on error from ghost service, update the status of the transaction in DB to failed
-	  	pg.update(userTransId, 'failed', function(status) {
-	  		if (status === 'Failed') {
-		 		};
-	  	});
+	  	// ******************** Things to do when unexpected failure happens ******************************
+			handleFail(res, products, userTransId);
 	  });
-	});  //
-
+	});
 });
+
+
+function handleFail(res, products, userTransId) {
+	// ******************** Things to do when unexpected failure happens ******************************
+	res.send("Error in Transaction\n");
+	axios.put('http://localhost:5000/inventory/undo', products)
+	.catch(function(error) {
+		// console.log('inventory could not undo request');
+	});
+	//on error from ghost service, update the status of the transaction in DB to failed
+	pg.update(userTransId, 'failed', function(status) {});
+}
 
 
 

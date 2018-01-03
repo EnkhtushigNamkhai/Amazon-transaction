@@ -4,8 +4,8 @@ config:
     pool: 10 # All HTTP requests from all virtual users will be sent over the same 10 connections
   phases:
     - duration: 10
-      arrivalRate: 10
-      name: "Create 5 virtual users every second for 2 minute"
+      arrivalRate: 1
+      name: "Create 10 virtual users every second for "
   processor: "./loadTest.js"
 scenarios:
   - name: "user is purchasing"
@@ -23,6 +23,24 @@ scenarios:
             primeTrialSignUp: "{{ primeTrialSignUp }}"
             shippingAddress: "{{ shippingAddress }}"
             billingAddress: "{{ billingAddress }}"
+
+
+# without queue and multiple servers, for 10 seconds at a 10,000RPS, my average RSP is 108.33
+# with queue ->
+
+# with duplicated servers ->
+
+#try to make my response time less
+
+
+# explore artillery outputs
+
+#  PROBLEM: apm not reporting everything from artillery???
+# How to duplicate my server? use docker?
+
+
+
+
 
 
 # Format of data it sends to processTrans

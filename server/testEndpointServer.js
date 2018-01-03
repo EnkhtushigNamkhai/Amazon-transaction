@@ -23,33 +23,38 @@ app.listen(5000, function () {
 		
 
 /**** TESTING POSTS TO INVENTORY *****/
-	//testing if sending a put request to inventory correctly
-	app.put('/inventory/update', function (req, res) {
-		console.log('Inventory: got a request from transactions');
-		console.log(req.body);
-		res.send('success');
-	});
-
-
-/**** TESTING POSTS TO THE GHOST SERVICE *****/
-	//testing if sending a post request to ghost service correctly
-	app.post('/ghost/completeTransaction', function(req, res) {
 	// { userId: 123,
 	//   paymentId: 54321,
 	//   vendors: 
 	//    [ { vendorId: 1, vendorName: 'Enki', depositAmount: 9999990 },
 	//      { vendorId: 2, vendorName: 'Someone else', depositAmount: 5 } ],
 	//   cartTotal: 100 }
-		console.log('GhostService: got a request from transactions');
-		console.log(req.body);
+	//testing if sending a put request to inventory correctly
+	app.put('/inventory/update', function (req, res) {
+		res.send('success');
+	});
 
-		//try to generate users from 1-2000000 and make each of them
-		// have two paymentIds.
+	var boolean = true;
+/**** TESTING POSTS TO THE GHOST SERVICE *****/
+	//testing if sending a post request to ghost service correctly
+	app.post('/ghost/completeTransaction', function(req, res) {
 
-		//have vendors, make each vendor have a account to deposit money into.
+	/** UNCOMMENT FOR LATER TO TEST BOTH SUCCESS AND FAILURE **/
+		// console.log(boolean);
+		// if (boolean) {
+		// 	res.send('successful');
+		// } else {
+		// 	res.send('failed');		
+		// }
+		// boolean = !boolean;
+		res.send('successful');
+	});
 
-		res.send('trans done')
-	})
+	app.put('/inventory/undo', function(req, res) {
+		console.log('undo request to inventory');
+		res.send('success undo');
+	});
+
 
 /**** TESTING POSTS TO CLIENT? *****/
 //Client stores the  ->

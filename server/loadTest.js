@@ -11,10 +11,47 @@ function getRandomArbitrary(min, max) {
 
 function generateRandomData(userContext, events, done) {
   // generate data with Faker:
-  var userId = getRandomArbitrary(1,2000000);
+  var userId = getRandomArbitrary(1, 2000000);
   var fullName = faker.name.findName();
   var phone = faker.fake("{{phone.phoneNumberFormat}}");
+
   var products = [{
+    productId: faker.random.number(),
+    productName: faker.commerce.productName(),
+    price: faker.commerce.price(),
+    vendorId: faker.random.number(),
+    vendorName: faker.company.companyName(),
+    quantity: getRandomArbitrary(1,5),
+    isPrimeProduct: faker.fake("{{random.boolean}}")
+  }, 
+  {
+    productId: faker.random.number(),
+    productName: faker.commerce.productName(),
+    price: faker.commerce.price(),
+    vendorId: faker.random.number(),
+    vendorName: faker.company.companyName(),
+    quantity: getRandomArbitrary(1,5),
+    isPrimeProduct: faker.fake("{{random.boolean}}")
+  }, 
+  {
+    productId: faker.random.number(),
+    productName: faker.commerce.productName(),
+    price: faker.commerce.price(),
+    vendorId: faker.random.number(),
+    vendorName: faker.company.companyName(),
+    quantity: getRandomArbitrary(1,5),
+    isPrimeProduct: faker.fake("{{random.boolean}}")
+  },
+  {
+    productId: faker.random.number(),
+    productName: faker.commerce.productName(),
+    price: faker.commerce.price(),
+    vendorId: faker.random.number(),
+    vendorName: faker.company.companyName(),
+    quantity: getRandomArbitrary(1,5),
+    isPrimeProduct: faker.fake("{{random.boolean}}")
+  },
+  {
     productId: faker.random.number(),
     productName: faker.commerce.productName(),
     price: faker.commerce.price(),

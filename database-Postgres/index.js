@@ -57,10 +57,13 @@ module.exports.storeTransaction = function(obj, callback) {
 	  grandtotal: obj.cartTotal
 	}).save().then(function(newRow) {
     /**************** AFTER USER TRANS IS STORED *****************/
+    // callback(newRow.id, null);
+
     var productsToInsert = [];
+
+    var itemsProcessed = 0; 
     for (var i = 0; i < obj.products.length; i++) {
         var product = obj.products[i];
-
         var productObj = {
         usertransid: newRow.id,
         vendorid: product.vendorId,
@@ -72,17 +75,31 @@ module.exports.storeTransaction = function(obj, callback) {
         productquantity: product.quantity,
         priceperitem: product.price
       };
-      productsToInsert.push(productObj);
+      
+      //add productObj to database
+      new purchasedproducts(productObj).save(null, {method: 'insert'}).then(function(result) {
+        itemsProcessed++;
+        if (itemsProcessed === obj.products.length) {
+          callback(newRow.id, null);
+        }
+      }).catch(function(err) {
+        // callback(null, err);
+        console.log('error in saving');
+      });
+
+
+      // productsToInsert.push(productObj);
     }
 
-    // batch insert it into PurchasedProducts table. 
-    knex.batchInsert('purchasedproducts', productsToInsert)
-    .then(function(ids) {
-        console.log('batch load successful');
-        callback(newRow.id, null);
-    }).catch(function(err) {
-      callback(null, err);
-    });
+
+    // // batch insert it into PurchasedProducts table. 
+    // knex.batchInsert('purchasedproducts', productsToInsert)
+    // .then(function(ids) {
+    //     console.log('batch load successful');
+    //     callback(newRow.id, null);
+    // }).catch(function(err) {
+    //   callback(null, err);
+    // });
 
   }).catch(function(err) {
     // Handle errors
@@ -92,9 +109,3 @@ module.exports.storeTransaction = function(obj, callback) {
   });
 }
 
-
-  // purchasedproducts.query().where('id', 1).then(function(user) {
-//   console.log('heeyyyy: ', user);
-// }).catch(function(err) {
-//   console.error(err);
-// });
