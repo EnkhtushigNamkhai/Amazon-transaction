@@ -25,6 +25,7 @@ if (cluster.isMaster) {
         cluster.fork();
     });
 } else {
+	var relic = require('newrelic');
 	var app = require('express')();
 	/** Uncomment if want to use the queue **/
 	// var aws = require('aws-sdk');
@@ -38,6 +39,11 @@ if (cluster.isMaster) {
   var server = app.listen(8000, function() {
     console.log('Process ' + process.pid + ' is listening to all incoming requests');
   });
+
+	// app.listen(8000, function () { 
+	//   console.log('listening on port 8000!') 
+	// });
+
 // any errors caught by Express can be logged by the agent as well
 /** UNCOMMENT IF WANT TO USE APM **/
 // app.use(apm.middleware.express())
@@ -61,18 +67,15 @@ if (cluster.isMaster) {
 
 	function handleFail(res, products, userTransId) {
 		// ******************** Things to do when unexpected failure happens ******************************
-		res.send("Error in Transaction\n");
-		axios.put('http://localhost:5000/inventory/undo', products)
-		.catch(function(error) {
-			// console.log('inventory could not undo request');
-		});
+		// axios.put('http://localhost:5000/inventory/undo', products)
+		// .catch(function(error) {
+		// 	console.log('inventory could not undo request');
+		// });
+		
 		//on error from ghost service, update the status of the transaction in DB to failed
 		pg.update(userTransId, 'failed', function(status) {});
 	}
 
-// app.listen(8000, function () { 
-//   console.log('listening on port 8000!') 
-// });
 
 	//*********************REQ FROM CLIENT************************************
 	app.post('/processTrans', function(req, res) {
@@ -91,19 +94,21 @@ if (cluster.isMaster) {
 		var primeTrialSignUp = obj.primeTrialSignUp;
 		var paymentId = obj.paymentId;
 
-	  /****** send a post request to Inventory with the products and quantity.*********/
-	  axios.put('http://localhost:5000/inventory/update', products)
-	  .then(function (response) {
-	    console.log('inventory updated');
-	  })
-	  .catch(function (error) {
-	  	console.log('inventory error');
-	  });
+
+	  // /****** send a post request to Inventory with the products and quantity.*********/
+	  // axios.put('http://localhost:5000/inventory/update', products)
+	  // .then(function (response) {
+	  //   // console.log('inventory updated');
+	  // })
+	  // .catch(function (error) {
+	  // 	console.log('inventory update error', error);
+	  // });
 
 
 	  /****** Insert a new transaction to the DB with status, 'pending' *********/
 		pg.storeTransaction(obj, function(userTransId, err) {
 			//AFTER TRANS IS STORED SUCCESSFULLY
+
 			if (err) {
 				res.send('error...');
 			}
@@ -114,9 +119,9 @@ if (cluster.isMaster) {
 		  	cartTotal: cartTotal,
 		  	vendors: vendors
 		  };
-
-		  // res.send('pending');
-
+			
+			// res.send('pending');
+		  
 		  /******************* Telling ghost service to complete the transaction **********************/
 		  axios.post('http://localhost:5000/ghost/completeTransaction', paymentData)
 		  .then(function (response) {
@@ -126,66 +131,71 @@ if (cluster.isMaster) {
 			  	res.send("Successful Transaction\n");
 			  	if (primeTrialSignUp) {
 				  	var date = new Date();  //Wed Dec 20 2017 15:08:02 GMT-0800 (PST) in ISO Format
-				    axios.put('/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: cartTotal});
+				    
+				    // axios.put('http://localhost:5000/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: cartTotal})
+				    // .catch(function(err) {
+				    // 	console.log('error in prime/signup');
+				    // });
 				  }
 			  	
 				  //on success from ghost service, update the status of the transaction in DB to completed
 			  	pg.update(userTransId, 'completed', function(status) {});	  		
 		  	} else {
+		  		res.send("Error in Transaction\n");
 		  		handleFail(res, products, userTransId);
 		  	}
 		  })
 		  .catch(function (error) {
 		  	// ******************** Things to do when unexpected failure happens ******************************
+				res.send("Error in Transaction\n");
 				handleFail(res, products, userTransId);
 		  });
 		});
 	});
 
-	
+	app.post('/unsubscribe', function(req, res) {
+		/********* CHANGE INPUTS.UNBSCRIBETESTINPUT TO REQ.BODY LATER *********/
+		var userId = inputs.unsubscribeTestInput.userId; // object with a userId key
+	  var date = new Date();
+	  //cancel charging card monthly.
+	  //if a person already had a free trial and canceled, don't give it to them again.
+	  axios.put('http://localhost:5000/prime/cancel', {userId: userId, primeTrialEndDate: date})
+	  .then(function(response) {
+	  	console.log('canceled the trial');
+	  	//send client a res saying that the unsubscription was successful
+	  	res.send("Successful unsubscription\n");
+	  })
+	  .catch(function(error) {
+	  	console.log('error in unsubscribe');
+	  	res.send("Error in unsubscription\n");
+	  	//send client a res saying that the unsubscription was not successful
+	  });
+	});	
+
+	//********************REQUEST FROM CLIENT TO SUBSCRIBE, 0 PURCHASES************
+	app.post('/subscribe', function(req, res) {
+		/********* CHANGE INPUTS.SUBSCRIBETESTINPUT TO REQ.BODY LATER *********/
+		 
+		//if a person already had a free trial and canceled, don't give it to them again.
+		//send a response that says, free trial not available.
+		userId = inputs.subscribeTestInput.userId;
+		var date = new Date();
+		//Tell users that a prime trial sign up has occured
+	  axios.put('http://localhost:5000/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: 0})
+	  .then(function(response) {
+	  	console.log('signed the user up for trial');
+	  	//send client a res saying that the subscription was successful
+	  	res.send('Successful subscription\n');
+	  })
+	  .catch(function(error) {
+	  	console.log('error in subscribe');
+	  	res.send('Error in subscription\n');
+	  	//send the client a res saying that the subscription was not successful
+	  });
+	});
 }
 
 
-	// app.post('/unsubscribe', function(req, res) {
-	// 	/********* CHANGE INPUTS.UNBSCRIBETESTINPUT TO REQ.BODY LATER *********/
-	// 	var userId = inputs.unsubscribeTestInput.userId; // object with a userId key
-	//   var date = new Date();
-	//   //cancel charging card monthly.
-	//   //if a person already had a free trial and canceled, don't give it to them again.
-	//   axios.put('http://localhost:5000/prime/cancel', {userId: userId, primeTrialEndDate: date})
-	//   .then(function(response) {
-	//   	console.log('canceled the trial');
-	//   	//send client a res saying that the unsubscription was successful
-	//   	res.send("Successful unsubscription\n");
-	//   })
-	//   .catch(function(error) {
-	//   	console.log('error in unsubscribe');
-	//   	res.send("Error in unsubscription\n");
-	//   	//send client a res saying that the unsubscription was not successful
-	//   });
-	// });	
-
-	// //********************REQUEST FROM CLIENT TO SUBSCRIBE, 0 PURCHASES************
-	// app.post('/subscribe', function(req, res) {
-	// 	/********* CHANGE INPUTS.SUBSCRIBETESTINPUT TO REQ.BODY LATER *********/
-		 
-	// 	//if a person already had a free trial and canceled, don't give it to them again.
-	// 	//send a response that says, free trial not available.
-	// 	userId = inputs.subscribeTestInput.userId;
-	// 	var date = new Date();
-	// 	//Tell users that a prime trial sign up has occured
-	//   axios.put('http://localhost:5000/prime/signup', {userId: userId, primeStartDate: date, totalSpentAtTrialStart: 0})
-	//   .then(function(response) {
-	//   	console.log('signed the user up for trial');
-	//   	//send client a res saying that the subscription was successful
-	//   	res.send('Successful subscription\n');
-	//   })
-	//   .catch(function(error) {
-	//   	console.log('error in subscribe');
-	//   	res.send('Error in subscription\n');
-	//   	//send the client a res saying that the subscription was not successful
-	//   });
-	// });
 
 
 

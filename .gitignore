@@ -39,3 +39,4 @@ bower_components/
 /dataGeneration/dataFiles
 
 config.json
+newrelic.js

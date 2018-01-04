@@ -11,13 +11,13 @@ app.listen(5000, function () {
 /**** TESTING POSTS TO USERS *****/
 	//testing if sending a put request to users correctly
 	app.put('/prime/signup', function (req, res) {
-		console.log('Client: got a request from transaction, user signed up for prime');
+		//console.log('Client: got a request from transaction, user signed up for prime');
 		res.end();
 	});
 
 	//testing if sending a unsubscribe request to users correctly
 	app.put('/prime/cancel', function(req, res) {
-		console.log('Client: got a request from transaction, user canceled prime trial');
+		//console.log('Client: got a request from transaction, user canceled prime trial');
 		res.end();
 	});
 		

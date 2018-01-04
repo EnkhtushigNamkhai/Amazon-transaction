@@ -3,10 +3,10 @@ const fs = require('fs');
 // // \l - shows all databases
 // // \d - shows all tables
 
-
+// generateDetails();
 // generatePaymentMethods(); //10s
-// generateUserTransData(); //3min
-generatePurchasedProds(); // 7 - 8 mins
+generateUserTransData(); //3min
+// generatePurchasedProds(); // 7 - 8 mins
 
 function getRandomArbitrary(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
@@ -50,23 +50,50 @@ function generateUserTransData() {
   writeStream.once('open', (fd) => {
     if (first) {
       first = false;
-      writeStream.write('date; userId; paymentMethodId; status; fullName; addressLine1; addressLine2; city; state; zip; country; phone; grandTotal\n');
-    } 
+      writeStream.write('date; userId; paymentMethodId; status; grandTotal\n');
+    }
     var statusArr = ['pending', 'completed', 'failed'];
-    count =- 1;
+    count = -1;
+    //2000000
+    for (var i = 1; i <= 2000000; i++) {
+      if (i % 100000 === 0) {
+        console.log(i);
+      }
+      // var userTransId = i; //number from 1 - 2M
+      var date = faker.date.past().toISOString();
+      var userId = i;
+      count = count + 2;
+      var paymentMethodId = count; //each user has different paymentIds
+
+      var status = statusArr[Math.floor(Math.random() * 3)];
+      var grandTotal = faker.commerce.price();
+
+      writeStream.write(`${date}; ${userId}; ${paymentMethodId}; ${status}; ${grandTotal}\n`);
+    }
+
+    writeStream.end();
+    console.log('done');
+
+  });
+
+}
+
+
+function generateDetails() {
+  var first = true;
+  var writeStream = fs.createWriteStream('./dataFiles/Details.csv', {'flags': 'a', 'encoding': null});
+
+  writeStream.once('open', (fd) => {
+    if (first) {
+      first = false;
+      writeStream.write('userTransId; fullName; addressLine1; addressLine2; city; state; zip; country; phone\n');
+    } 
     //2000000
     for (var i = 1; i <= 2000000; i++) {
       if (i % 100000 === 0) {
         console.log(i);
       }
       var userTransId = i; //number from 1 - 2M
-      var date = faker.date.past().toISOString();
-
-      var userId = i;
-      count = count + 2;
-      var paymentMethodId = count; //each user has different paymentIds
-
-      var status = statusArr[Math.floor(Math.random() * 3)];
       var fullName = faker.name.findName();
       var addressLine1 = faker.address.streetAddress();
       var addressLine2 = faker.address.secondaryAddress();
@@ -75,16 +102,14 @@ function generateUserTransData() {
       var zip = faker.address.zipCode();
       var country = faker.address.country();
       var phone = faker.phone.phoneNumberFormat();
-      var grandTotal = faker.commerce.price();
 
-      writeStream.write(`${date}; ${userId}; ${paymentMethodId}; ${status}; ${fullName}; ${addressLine1}; ${addressLine2}; ${city}; ${state}; ${zip}; ${country}; ${phone}; ${grandTotal}\n`);
+      writeStream.write(`${userTransId}; ${fullName}; ${addressLine1}; ${addressLine2}; ${city}; ${state}; ${zip}; ${country}; ${phone}\n`);
     }
 
     writeStream.end();
     console.log('done');
 
   });
-
 }
 
 //2 products for each transaction
